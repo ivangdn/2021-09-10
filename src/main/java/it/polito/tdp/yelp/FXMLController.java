@@ -5,7 +5,11 @@
 package it.polito.tdp.yelp;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.yelp.model.Business;
+import it.polito.tdp.yelp.model.LocaleDistanza;
 import it.polito.tdp.yelp.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -37,31 +41,83 @@ public class FXMLController {
     private TextField txtX2; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbCitta"
-    private ComboBox<?> cmbCitta; // Value injected by FXMLLoader
+    private ComboBox<String> cmbCitta; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbB1"
-    private ComboBox<?> cmbB1; // Value injected by FXMLLoader
+    private ComboBox<Business> cmbB1; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbB2"
-    private ComboBox<?> cmbB2; // Value injected by FXMLLoader
+    private ComboBox<Business> cmbB2; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
     
     @FXML
     void doCreaGrafo(ActionEvent event) {
+    	txtResult.clear();
+    	String city = cmbCitta.getValue();
+    	if(city==null) {
+    		txtResult.setText("Selezionare una città");
+    		return;
+    	}
     	
+    	String msg = model.creaGrafo(city);
+    	txtResult.setText(msg);
+    	
+    	cmbB1.getItems().clear();
+    	cmbB1.getItems().addAll(model.getVertici());
+    	cmbB2.getItems().clear();
+    	cmbB2.getItems().addAll(model.getVertici());
     }
 
     @FXML
     void doCalcolaLocaleDistante(ActionEvent event) {
-
+    	txtResult.clear();
+    	Business b1 = cmbB1.getValue();
+    	if(b1==null) {
+    		txtResult.setText("Selezionare un locale (b1)");
+    		return;
+    	}
     	
+    	LocaleDistanza locale = model.getLocaleDistante(b1);
+    	if(locale==null) {
+    		txtResult.setText("Nessun risultato. Seleziona un altro locale");
+    		return;
+    	}
+    	
+    	txtResult.appendText("LOCALE PIU' DISTANTE:\n");
+    	txtResult.appendText(String.format("%s = %f", locale.getB(), locale.getDistanza()));
     }
 
     @FXML
     void doCalcolaPercorso(ActionEvent event) {
-
+    	txtResult.clear();
+    	Business b1 = cmbB1.getValue();
+    	Business b2 = cmbB2.getValue();
+    	if(b1==null || b2==null) {
+    		txtResult.setText("Selezionare due locali");
+    		return;
+    	}
+    	
+    	int soglia;
+    	try {
+    		soglia = Integer.parseInt(txtX2.getText());
+    	} catch(NumberFormatException e) {
+    		txtResult.setText("La soglia deve essere un numero intero");
+    		return;
+    	}
+    	
+    	List<Business> percorso = model.calcolaPercorso(b1, b2, soglia);
+    	if(percorso==null) {
+    		txtResult.setText("Nessun risultato");
+    		return;
+    	}
+    	
+    	txtResult.appendText("PERCORSO MIGLIORE:\n");
+    	for(Business locale : percorso) {
+    		txtResult.appendText(locale+"\n");
+    	}
+    	txtResult.appendText("KM PERCORSI: "+model.calcolaKmPercorsi(percorso));
     }
 
 
@@ -80,5 +136,6 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	cmbCitta.getItems().addAll(model.getCities());
     }
 }
